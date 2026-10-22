@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Бэктестер · MOEX</title>
+<style>
+:root{--bg:#f5f5f7;--panel:#fff;--p2:#f0f0f2;--line:#e2e2e5;--text:#111;--muted:#6b6b70;--accent:#2F6FED;--green:#16A34A;--red:#DC2626;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121214;--panel:#1c1c1f;--p2:#26262a;--line:#34343a;--text:#f2f2f4;--muted:#a0a0a8;--accent:#5A8CFB;--green:#34D399;--red:#F87171}}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+.mono,input,select,td{font-family:ui-monospace,'SF Mono',Consolas,monospace}
+.wrap{max-width:1100px;margin:0 auto;padding:24px 16px 60px}
+h1{font-size:28px;margin:0 0 4px;letter-spacing:-.01em}
+.sub{color:var(--muted);font-size:13px;margin:0 0 20px}
+.grid{display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start}
+@media(max-width:860px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px}
+.panel h2{font-size:13px;color:var(--muted);margin:0 0 14px;font-weight:600;display:flex;justify-content:space-between;gap:8px}
+.f{margin-bottom:12px}
+.f label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
+.r3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.r2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+input,select{width:100%;background:var(--p2);border:1px solid var(--line);color:var(--text);padding:9px;border-radius:7px;font-size:16px}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+input:disabled{opacity:.5}
+.tabs{display:flex;gap:4px;background:var(--p2);padding:4px;border-radius:8px;margin-bottom:10px}
+.tabs button{flex:1;border:0;background:none;color:var(--muted);padding:8px;border-radius:6px;font-size:12px;cursor:pointer}
+.tabs button.on{background:var(--panel);color:var(--text);box-shadow:0 0 0 1px var(--line)}
+.tabs button:disabled{opacity:.5;cursor:default}
+.btn{width:100%;border:0;border-radius:8px;padding:11px;font-size:14px;font-weight:600;cursor:pointer;background:var(--accent);color:#fff}
+.btn.sec{background:var(--p2);color:var(--text);border:1px solid var(--line);font-weight:500;font-size:13px}
+.btn:disabled{opacity:.6;cursor:default}
+.hint{font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5}
+.list{max-height:190px;overflow-y:auto;margin-top:8px;border:1px solid var(--line);border-radius:7px}
+.item{display:flex;justify-content:space-between;gap:8px;padding:9px;font-size:12px;cursor:pointer;border-top:1px solid var(--line)}
+.item:first-child{border-top:0}.item:hover{background:var(--p2)}
+.item span:last-child{color:var(--muted);font-size:11px;text-align:right}
+.sel{margin-top:8px;padding:9px;border-radius:7px;border:1px solid var(--green);color:var(--green);font-size:12px;display:flex;justify-content:space-between;align-items:center}
+.sel button{background:none;border:0;color:inherit;cursor:pointer;font-size:15px}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+@media(max-width:700px){.metrics{grid-template-columns:repeat(2,1fr)}}
+.m{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
+.m .k{font-size:11px;color:var(--muted)}.m .v{font-size:20px;font-weight:600;margin-top:5px}
+.pos{color:var(--green)}.neg{color:var(--red)}
+svg.eq{width:100%;height:200px;display:block}
+.scroll{max-height:340px;overflow:auto}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:620px}
+th{text-align:left;color:var(--muted);font-weight:500;font-size:11px;padding:7px 8px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel)}
+td{padding:7px 8px;border-bottom:1px solid var(--line)}
+.link{background:none;border:0;color:var(--accent);cursor:pointer;font-size:12px;text-decoration:underline}
+.err{border-color:var(--red);color:var(--red);font-size:13px;line-height:1.6}
+.wk{display:flex;gap:1px}.wk i{width:5px;height:16px;flex:none}
+.empty{text-align:center;color:var(--muted);padding:50px 16px;font-size:13px}
+.tb{display:flex;gap:6px;align-items:center;margin-bottom:10px;flex-wrap:wrap}.tb .btn{width:auto;padding:5px 12px;font-size:13px}
+th[data-k]{cursor:pointer;user-select:none;white-space:nowrap}th[data-k]:hover{color:var(--text)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Бэктестер</h1>
+  <p class="sub">16 стратегий · вечные фьючерсы MOEX · реальные свечи MOEX ISS</p>
+  <div class="grid">
+    <div class="panel">
+      <h2>Конфигурация</h2>
+      <div class="f">
+        <label>Источник данных</label>
+        <div class="tabs">
+          <button type="button" class="on" id="tab-moex">MOEX ISS</button>
+          <button type="button" id="tab-tinvest" disabled title="Появится позже">Т-Инвестиции (скоро)</button>
+        </div>
+        <select id="contract"></select>
+        <div class="hint" id="spec" style="margin:6px 0 0"></div>
+        <div class="hint">Запросы идут напрямую на iss.moex.com. Если браузер блокирует их (CORS), приложение пробует сторонние прокси — это публичные данные, но сами прокси вам неподконтрольны. На своём сервере прокси не нужны.</div>
+      </div>
+      <div class="f">
+        <label>Таймфрейм</label>
+        <select id="tf">
+          <option value="M30">M30 — 1 неделя</option>
+          <option value="H1" selected>H1 — 1 неделя</option>
+          <option value="H4">H4 — 1 месяц</option>
+          <option value="D1">D1 — 1 год</option>
+        </select>
+      </div>
+      <div class="f">
+        <label>Стратегия</label>
+        <select id="strat"></select>
+        <div class="r3" id="sparams" style="margin-top:8px"></div>
+      </div>
+      <div class="r2 f">
+        <div><label>Контрактов</label><input type="number" id="ctr" value="1" min="1" inputmode="numeric"></div>
+        <div><label>Баланс, ₽</label><input type="number" id="bal" value="100000" min="0" step="1000" inputmode="numeric"></div>
+      </div>
+      <div class="f">
+        <label>Комиссия за контракт, ₽ (0 — без комиссии)</label>
+        <input type="number" id="com" value="2.5" min="0" step="0.5" inputmode="decimal">
+      </div>
+      <button class="btn" id="run">Запустить бэктест</button>
+      <div class="hint">Сигнал на close[i], исполнение на open[i+1]. Прибыль считается с учётом лота контракта; фандинг вечных фьючерсов не учитывается.</div>
+      <div class="f" style="margin-top:18px;border-top:1px solid var(--line);padding-top:14px">
+        <label>Разбор за год по неделям: стратегии</label>
+        <label style="display:flex;gap:8px;align-items:center;color:var(--text);font-weight:600"><input type="checkbox" id="all-st" style="width:auto"> Выбрать все</label>
+        <div id="study-list"></div>
+        <label style="margin-top:14px">Фьючерсы для запроса котировок</label>
+        <label style="display:flex;gap:8px;align-items:center;color:var(--text);font-weight:600"><input type="checkbox" id="all-ct" checked style="width:auto"> Выбрать все</label>
+        <div id="ctr-list"></div>
+      </div>
+      <button class="btn sec" id="study">Разбор за год по неделям</button>
+      <div class="hint">Выбранные фьючерсы × выбранные стратегии, 365 дней, таймфрейм из списка выше (H1, H4 или D1). Загрузка года с MOEX занимает время, особенно через прокси. Параметры каждой стратегии берутся из панели выше: выберите стратегию и задайте значения, остальные идут по умолчанию.</div>
+    </div>
+    <div id="out"><div class="panel empty">Найдите контракт, выберите его и запустите бэктест. Здесь появятся метрики, equity-кривая и журнал сделок.</div></div>
+  </div>
+</div>
+
+<script>
+/* ---------- Indicators ---------- */
+function ema(v, span){
+  const a = 2/(span+1), o = [v[0]];
+  for(let i=1;i<v.length;i++) o.push(a*v[i] + (1-a)*o[i-1]);
+  return o;
+}
+function macdLine(closes, fast, slow){
+  const f = ema(closes, fast), s = ema(closes, slow);
+  return closes.map((_,i)=>f[i]-s[i]);
+}
+
+/* ---------- Strategy ---------- */
+const Signal = {BUY:'BUY', SELL:'SELL', HOLD:'HOLD'};
+class MACDZeroLine{
+  constructor(fast, slow, sig){ this.name='MACD_Zero_Line'; this.fast=fast; this.slow=slow; this.sig=sig; this.need=slow+sig; }
+  precompute(closes){ this.macd = macdLine(closes, this.fast, this.slow); this.minLen = this.slow + this.sig; }
+  signalAt(i){
+    if(i < this.minLen) return Signal.HOLD;
+    const p = this.macd[i-1], c = this.macd[i];
+    if(p < 0 && c >= 0) return Signal.BUY;
+    if(p > 0 && c <= 0) return Signal.SELL;
+    return Signal.HOLD;
+  }
+}
+
+class EmaCross{
+  constructor(fast, slow){ this.name='EMA_Cross'; this.fast=fast; this.slow=slow; this.need=slow; }
+  precompute(c){ this.f = ema(c, this.fast); this.s = ema(c, this.slow); this.minLen = this.slow; }
+  signalAt(i){
+    if(i < this.minLen) return Signal.HOLD;
+    if(this.f[i-1] <= this.s[i-1] && this.f[i] > this.s[i]) return Signal.BUY;
+    if(this.f[i-1] >= this.s[i-1] && this.f[i] < this.s[i]) return Signal.SELL;
+    return Signal.HOLD;
+  }
+}
+
+/* RSI: вход при выходе из зоны перепроданности/перекупленности (RSI по Уайлдеру) */
+class RsiRev{
+  constructor(n, lo, hi){ this.name='RSI_Reversal'; this.n=n; this.lo=lo; this.hi=hi; this.need=n+1; }
+  precompute(c){
+    const n=this.n, r=new Array(c.length).fill(50); let g=0, l=0;
+    for(let i=1;i<c.length;i++){
+      const d=c[i]-c[i-1], up=Math.max(d,0), dn=Math.max(-d,0);
+      if(i<=n){ g+=up/n; l+=dn/n; } else { g=(g*(n-1)+up)/n; l=(l*(n-1)+dn)/n; }
+      if(i>=n) r[i] = l===0 ? 100 : 100-100/(1+g/l);
+    }
+    this.r=r;
+  }
+  signalAt(i){
+    if(i<this.need) return Signal.HOLD;
+    if(this.r[i-1]<this.lo && this.r[i]>=this.lo) return Signal.BUY;
+    if(this.r[i-1]>this.hi && this.r[i]<=this.hi) return Signal.SELL;
+    return Signal.HOLD;
+  }
+}
+/* Боллинджер: возврат цены внутрь канала после выхода за границу */
+class BollingerRev{
+  constructor(n, k){ this.name='Bollinger_Reversion'; this.n=n; this.k=k; this.need=n; }
+  precompute(c){
+    const n=this.n; this.c=c; this.m=[]; this.sd=[];
+    for(let i=0;i<c.length;i++){
+      if(i<n-1){ this.m.push(NaN); this.sd.push(NaN); continue; }
+      let s=0; for(let j=i-n+1;j<=i;j++) s+=c[j];
+      const m=s/n; let v=0; for(let j=i-n+1;j<=i;j++) v+=(c[j]-m)**2;
+      this.m.push(m); this.sd.push(Math.sqrt(v/n));
+    }
+  }
+  signalAt(i){
+    if(i<this.n) return Signal.HOLD;
+    const lo=j=>this.m[j]-this.k*this.sd[j], hi=j=>this.m[j]+this.k*this.sd[j], c=this.c;
+    if(c[i-1]<lo(i-1) && c[i]>=lo(i)) return Signal.BUY;
+    if(c[i-1]>hi(i-1) && c[i]<=hi(i)) return Signal.SELL;
+    return Signal.HOLD;
+  }
+}
+/* Дончиан: пробой максимума/минимума за N предыдущих свечей */
+class Donchian{
+  constructor(n){ this.name='Donchian_Breakout'; this.n=n; this.need=n; }
+  precompute(c, d){ this.c=c; this.d=d; }
+  signalAt(i){
+    if(i<this.n) return Signal.HOLD;
+    let hh=-Infinity, ll=Infinity;
+    for(let j=i-this.n;j<i;j++){ hh=Math.max(hh,this.d[j].high); ll=Math.min(ll,this.d[j].low); }
+    if(this.c[i]>hh) return Signal.BUY;
+    if(this.c[i]<ll) return Signal.SELL;
+    return Signal.HOLD;
+  }
+}
+/* Supertrend: трендовый стоп на ATR (ATR по Уайлдеру), сигнал при смене направления */
+class Supertrend{
+  constructor(n, m){ this.name='Supertrend'; this.n=n; this.m=m; this.need=n+1; }
+  precompute(c, d){
+    const n=this.n, L=d.length, tr=[], atr=new Array(L).fill(NaN);
+    for(let i=0;i<L;i++) tr.push(i ? Math.max(d[i].high-d[i].low, Math.abs(d[i].high-d[i-1].close), Math.abs(d[i].low-d[i-1].close)) : d[i].high-d[i].low);
+    let s=0;
+    for(let i=0;i<L;i++){ if(i<n){ s+=tr[i]; if(i===n-1) atr[i]=s/n; } else atr[i]=(atr[i-1]*(n-1)+tr[i])/n; }
+    this.dir=new Array(L).fill(0); this.line=new Array(L).fill(NaN);
+    let fu=NaN, fl=NaN, dir=0;
+    for(let i=n-1;i<L;i++){
+      const mid=(d[i].high+d[i].low)/2, bu=mid+this.m*atr[i], bl=mid-this.m*atr[i];
+      if(i===n-1){ fu=bu; fl=bl; dir=c[i]>=mid?1:-1; }
+      else{
+        const pc=c[i-1];
+        fu = (bu<fu || pc>fu) ? bu : fu;
+        fl = (bl>fl || pc<fl) ? bl : fl;
+        if(dir===1 && c[i]<fl) dir=-1; else if(dir===-1 && c[i]>fu) dir=1;
+      }
+      this.dir[i]=dir; this.line[i]=dir===1?fl:fu;
+    }
+  }
+  signalAt(i){
+    if(i<this.need) return Signal.HOLD;
+    if(this.dir[i-1]===-1 && this.dir[i]===1) return Signal.BUY;
+    if(this.dir[i-1]===1 && this.dir[i]===-1) return Signal.SELL;
+    return Signal.HOLD;
+  }
+}
+
+/* ---------- Универсальная стратегия и хелперы ---------- */
+const sma=(v,n)=>v.map((_,i)=>i<n-1?NaN:v.slice(i-n+1,i+1).reduce((s,x)=>s+x,0)/n);
+const wil=(v,n)=>{const o=[];let s=0;for(let i=0;i<v.length;i++){if(i<n){s+=v[i];o.push(i===n-1?s/n:NaN);}else o.push((o[i-1]*(n-1)+v[i])/n);}return o;};
+const trArr=d=>d.map((x,i)=>i?Math.max(x.high-x.low,Math.abs(x.high-d[i-1].close),Math.abs(x.low-d[i-1].close)):x.high-x.low);
+const hh=(d,i,n)=>Math.max(...d.slice(i-n+1,i+1).map(x=>x.high)), ll=(d,i,n)=>Math.min(...d.slice(i-n+1,i+1).map(x=>x.low));
+const cu=(a,b,i)=>a[i-1]<=b[i-1]&&a[i]>b[i], cd=(a,b,i)=>a[i-1]>=b[i-1]&&a[i]<b[i];
+const S2=(u,d)=>u?Signal.BUY:(d?Signal.SELL:Signal.HOLD);
+class Fn{
+  constructor(name, need, pre, sig){ this.name=name; this.need=need; this.pre=pre; this.sig=sig; }
+  precompute(c, d){ this.s = this.pre(c, d); }
+  signalAt(i){ return i < this.need ? Signal.HOLD : this.sig(this.s, i); }
+}
+
+/* ---------- Portfolio + ExecutionEngine ---------- */
+class Portfolio{
+  constructor(balance){ this.balance = balance; this.reset(); }
+  reset(){ this.pos = 'FLAT'; this.entry = null; this.entryTime = null; this.n = 0; }
+  open(pos, price, time, n){ this.pos = pos; this.entry = price; this.entryTime = time; this.n = n; }
+}
+class ExecutionEngine{
+  constructor(pf, meta, commission, pointValue){ this.pf = pf; this.meta = meta; this.commission = commission; this.pointValue = pointValue; this.trades = []; }
+  execute(sig, price, time, n){
+    const p = this.pf;
+    if(sig === Signal.BUY){
+      if(p.pos === 'SHORT') this.close(price, time);
+      if(p.pos === 'FLAT') p.open('LONG', price, time, n);
+    }else if(sig === Signal.SELL){
+      if(p.pos === 'LONG') this.close(price, time);
+      if(p.pos === 'FLAT') p.open('SHORT', price, time, n);
+    }
+  }
+  unrealized(price){
+    const p = this.pf;
+    if(p.pos === 'FLAT') return 0;
+    return (p.pos === 'LONG' ? price - p.entry : p.entry - price) * p.n * this.pointValue;
+  }
+  close(price, time){
+    const p = this.pf;
+    if(p.pos === 'FLAT') return;
+    const gross = (p.pos === 'LONG' ? price - p.entry : p.entry - price) * p.n * this.pointValue;
+    const commission = this.commission * p.n * 2;
+    const profit = gross - commission;
+    this.trades.push({...this.meta, direction:p.pos, entryTime:p.entryTime, entryPrice:p.entry, exitTime:time, exitPrice:price, contracts:p.n, profit, commission});
+    p.balance += profit;
+    p.reset();
+  }
+}
+function runBacktest(strategy, engine, data, n){
+  strategy.precompute(data.map(c=>c.close), data);
+  engine.eq = [[data[0].datetime, engine.pf.balance]]; // капитал на закрытии каждой свечи
+  for(let i=0;i<data.length-1;i++){
+    const nx = data[i+1];
+    engine.execute(strategy.signalAt(i), nx.open, nx.datetime, n);
+    engine.eq.push([nx.datetime, engine.pf.balance + engine.unrealized(nx.close)]);
+  }
+  const last = data[data.length-1];
+  engine.close(last.close, last.datetime);
+  engine.eq[engine.eq.length-1] = [last.datetime, engine.pf.balance];
+  return engine.trades;
+}
+
+/* ---------- Analytics ---------- */
+function metrics(trades, init){
+  const sum = a => a.reduce((s,x)=>s+x,0);
+  const pr = trades.map(t=>t.profit);
+  const gp = sum(pr.filter(x=>x>0)), gl = Math.abs(sum(pr.filter(x=>x<0)));
+  let eq = init, peak = init, dd = 0;
+  for(const x of pr){ eq += x; peak = Math.max(peak, eq); dd = Math.max(dd, peak-eq); }
+  const np = sum(pr);
+  let sharpe = 0;
+  if(pr.length > 1){
+    const m = np/pr.length, sd = Math.sqrt(sum(pr.map(x=>(x-m)**2))/(pr.length-1));
+    sharpe = sd ? (m/sd)*Math.sqrt(pr.length) : 0;
+  }
+  return {
+    np, dd, sharpe,
+    pf: gl ? gp/gl : (gp>0 ? Infinity : 0),
+    rf: dd ? np/dd : (np>0 ? Infinity : 0),
+    win: pr.length ? pr.filter(x=>x>0).length/pr.length*100 : 0,
+    n: pr.length
+  };
+}
+
+/* ---------- Data providers ----------
+   Интерфейс: { id, searchContracts(query), getCandles(secid, timeframe, onProgress) }
+   Чтобы добавить Т-Инвестиции, реализуйте такой же объект и зарегистрируйте его в PROVIDERS.
+   Ключ API не должен жить в браузере — для Т-Инвестиций провайдер будет ходить на ваш сервер. */
+const MOEX_BASE = 'https://iss.moex.com/iss/engines/futures/markets/forts';
+const PLAN = {
+  M30:{interval:10, target:30, days:7},
+  H1:{interval:60, target:60, days:7},
+  H4:{interval:60, target:240, days:30},
+  D1:{interval:24, target:1440, days:365},
+};
+
+async function fetchJson(url){
+  const tries = [
+    url,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+  ];
+  let last;
+  for(const u of tries){
+    try{
+      const r = await fetch(u);
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return await r.json();
+    }catch(e){ last = e; }
+  }
+  throw new Error('MOEX недоступен напрямую и через прокси ('+last.message+'). Попробуйте позже или откройте страницу через свой хостинг.');
+}
+const zip = (cols, row) => Object.fromEntries(cols.map((c,i)=>[c,row[i]]));
+
+function resample(candles, minutes){
+  const ms = minutes*60000, map = new Map();
+  for(const c of candles){
+    const k = Math.floor(c.datetime.getTime()/ms)*ms, b = map.get(k);
+    if(!b) map.set(k, {...c, datetime:new Date(k)});
+    else{ b.high = Math.max(b.high, c.high); b.low = Math.min(b.low, c.low); b.close = c.close; b.volume += c.volume; }
+  }
+  return [...map.values()];
+}
+
+/* Поддерживаемые контракты (спецификации moex.com на 20.10.2026).
+   Рублей за 1,0 пункта цены на контракт = tickValue / tick. */
+const CONTRACTS = {
+  USDRUBF:{secid:'USDRUBF', title:'Доллар США / рубль', lot:1000, unit:'USD', tick:0.01, tickValue:10},
+  EURRUBF:{secid:'EURRUBF', title:'Евро / рубль', lot:1000, unit:'EUR', tick:0.01, tickValue:10},
+  CNYRUBF:{secid:'CNYRUBF', title:'Юань / рубль', lot:1000, unit:'CNY', tick:0.001, tickValue:1},
+  GLDRUBF:{secid:'GLDRUBF', title:'Золото / рубль', lot:1, unit:'г', tick:0.1, tickValue:0.1},
+  SLVRUBF:{secid:'SLVRUBF', title:'Серебро / рубль', lot:100, unit:'г', tick:0.01, tickValue:1},
+};
+const MoexProvider = {
+  id:'moex',
+  async getCandles(secid, tf, onProgress, days){
+    const p = PLAN[tf], till = new Date(), from = new Date(till - (days||p.days)*864e5);
+    const d = x => x.toISOString().slice(0,10);
+    onProgress && onProgress('Загружаю свечи '+secid+'…');
+    let start = 0, raw = [];
+    for(let g=0; g<600; g++){
+      const j = await fetchJson(`${MOEX_BASE}/securities/${encodeURIComponent(secid)}/candles.json?iss.meta=off&from=${d(from)}&till=${d(till)}&interval=${p.interval}&start=${start}`);
+      const b = j.candles;
+      if(!b || !b.data.length) break;
+      for(const r of b.data){
+        const o = zip(b.columns, r);
+        raw.push({datetime:new Date(String(o.begin).replace(' ','T')), open:o.open, high:o.high, low:o.low, close:o.close, volume:o.volume||0});
+      }
+      if(b.data.length < 100) break;
+      start += b.data.length;
+    }
+    if(!raw.length) throw new Error(`MOEX не вернул свечей по «${secid}» за ${d(from)} — ${d(till)}. Попробуйте другой таймфрейм или повторите позже.`);
+    raw.sort((a,b)=>a.datetime-b.datetime);
+    const src = p.interval === 60 ? 60 : (p.interval === 24 ? 1440 : 10);
+    return src === p.target ? raw : resample(raw, p.target);
+  }
+};
+const PROVIDERS = {moex: MoexProvider};
+let provider = PROVIDERS.moex;
+
+/* ---------- UI ---------- */
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function fmt(n, d=2){
+  if(n === Infinity) return '∞';
+  if(!isFinite(n)) return '—';
+  return n.toLocaleString('ru-RU', {minimumFractionDigits:d, maximumFractionDigits:d});
+}
+const fmtDate = d => d.toLocaleString('ru-RU', {day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit'});
+
+const contractSel = $('contract');
+contractSel.innerHTML = Object.values(CONTRACTS).map(c=>`<option value="${c.secid}">${c.secid} — ${c.title}</option>`).join('');
+function showSpec(){
+  const c = CONTRACTS[contractSel.value];
+  $('spec').textContent = `Лот ${c.lot} ${c.unit}, шаг ${c.tick} ₽ = ${c.tickValue} ₽. Движение цены на 1,0 = ${fmt(c.tickValue/c.tick,0)} ₽ на контракт.`;
+}
+contractSel.onchange = showSpec;
+showSpec();
+
+function equitySvg(trades, init){
+  const pts = [init];
+  trades.forEach(t=>pts.push(pts[pts.length-1] + t.profit));
+  const w = 1000, h = 200, pl = 56, pr = 12, pt = 12, pb = 12;
+  const mn = Math.min(...pts), mx = Math.max(...pts), rg = (mx-mn) || 1;
+  const x = i => pl + i/((pts.length-1) || 1)*(w-pl-pr);
+  const y = v => pt + (1-(v-mn)/rg)*(h-pt-pb);
+  const col = pts[pts.length-1] >= init ? 'var(--green)' : 'var(--red)';
+  const d = pts.map((v,i)=>`${i?'L':'M'}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ');
+  const grid = [0,.5,1].map(f=>{
+    const gy = pt + f*(h-pt-pb);
+    return `<line x1="${pl}" x2="${w-pr}" y1="${gy}" y2="${gy}" stroke="var(--line)"/><text x="2" y="${gy+4}" font-size="11" fill="var(--muted)">${fmt(mx-f*rg,0)}</text>`;
+  }).join('');
+  return `<svg class="eq" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${grid}<line x1="${pl}" x2="${w-pr}" y1="${y(init)}" y2="${y(init)}" stroke="var(--muted)" stroke-dasharray="4 4"/><path d="${d}" fill="none" stroke="${col}" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`;
+}
+
+function render(trades, m, init, finalBal, meta){
+  const cls = v => v>0 ? 'pos' : (v<0 ? 'neg' : '');
+  const rows = trades.map((t,i)=>`<tr><td>${i+1}</td><td class="${t.direction==='LONG'?'pos':'neg'}">${t.direction}</td><td>${fmtDate(t.entryTime)}</td><td>${fmt(t.entryPrice)}</td><td>${fmtDate(t.exitTime)}</td><td>${fmt(t.exitPrice)}</td><td>${t.contracts}</td><td class="${cls(t.profit)}">${t.profit>=0?'+':''}${fmt(t.profit)}</td><td>${fmt(t.commission)}</td></tr>`).join('');
+  $('out').innerHTML = `
+    <div class="metrics">
+      <div class="m"><div class="k">Чистая прибыль</div><div class="v mono ${cls(m.np)}">${m.np>=0?'+':''}${fmt(m.np)} ₽</div></div>
+      <div class="m"><div class="k">Profit Factor</div><div class="v mono ${m.pf>1?'pos':'neg'}">${fmt(m.pf,3)}</div></div>
+      <div class="m"><div class="k">Sharpe</div><div class="v mono ${cls(m.sharpe)}">${fmt(m.sharpe,3)}</div></div>
+      <div class="m"><div class="k">Макс. просадка</div><div class="v mono ${m.dd>0?'neg':''}">−${fmt(m.dd)} ₽</div></div>
+      <div class="m"><div class="k">Recovery Factor</div><div class="v mono">${fmt(m.rf,3)}</div></div>
+      <div class="m"><div class="k">Доля прибыльных</div><div class="v mono">${fmt(m.win,1)}%</div></div>
+      <div class="m"><div class="k">Сделок</div><div class="v mono">${m.n}</div></div>
+      <div class="m"><div class="k">Итоговый баланс</div><div class="v mono">${fmt(finalBal,0)} ₽</div></div>
+    </div>
+    <div class="panel"><h2>Equity-кривая <span class="mono">${esc(meta.secid)}, ${meta.tf}, свечей: ${meta.candles}</span></h2>${equitySvg(trades, init)}</div>
+    <div class="panel"><h2>Журнал сделок <button class="link" id="exp">Экспорт CSV</button></h2>
+      ${trades.length ? `<div class="scroll"><table><thead><tr><th>#</th><th>Сторона</th><th>Вход</th><th>Цена</th><th>Выход</th><th>Цена</th><th>Контр.</th><th>P&amp;L</th><th>Комиссия</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="empty">За выбранный период сделок не было.</div>'}
+    </div>`;
+  $('exp').onclick = ()=>{
+    const head = 'strategy,instrument,timeframe,direction,entry_time,entry_price,exit_time,exit_price,contracts,profit,commission';
+    const body = trades.map(t=>[t.strategy,t.instrument,t.timeframe,t.direction,t.entryTime.toISOString(),t.entryPrice,t.exitTime.toISOString(),t.exitPrice,t.contracts,t.profit.toFixed(2),t.commission.toFixed(2)].join(','));
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([[head,...body].join('\n')], {type:'text/csv'}));
+    a.download = 'trades.csv'; a.click(); URL.revokeObjectURL(a.href);
+  };
+}
+
+/* ---------- Реестр стратегий ---------- */
+const STRATS = {
+  macd:{label:'MACD Zero Line', err:'быстрая EMA должна быть меньше медленной.', params:[['fast','Быстрая',12],['slow','Медленная',26],['sig','Сигнал',9]], ok:p=>p.fast>=1&&p.slow>p.fast&&p.sig>=1, make:p=>new MACDZeroLine(p.fast,p.slow,p.sig)},
+  ema:{label:'EMA Cross', err:'быстрая EMA должна быть меньше медленной.', params:[['fast','Быстрая',20],['slow','Медленная',50]], ok:p=>p.fast>=1&&p.slow>p.fast, make:p=>new EmaCross(p.fast,p.slow)},
+  rsi:{label:'RSI Reversal', err:'период ≥ 2, нижний уровень меньше верхнего (в пределах 0–100).', params:[['n','Период',14],['lo','Нижний',30],['hi','Верхний',70]], ok:p=>p.n>=2&&p.lo>0&&p.hi<100&&p.lo<p.hi, make:p=>new RsiRev(p.n,p.lo,p.hi)},
+  bb:{label:'Bollinger Reversion', err:'период ≥ 2, множитель больше 0.', params:[['n','Период',20],['k','Множитель σ',2]], ok:p=>p.n>=2&&p.k>0, make:p=>new BollingerRev(p.n,p.k)},
+  don:{label:'Donchian Breakout', err:'период ≥ 2.', params:[['n','Период',20]], ok:p=>p.n>=2, make:p=>new Donchian(p.n)},
+  st:{label:'Supertrend', err:'период ≥ 2, множитель больше 0.', params:[['n','Период ATR',10],['m','Множитель',3]], ok:p=>p.n>=2&&p.m>0, make:p=>new Supertrend(p.n,p.m)},
+  stoch:{label:'Stochastic', err:'период ≥ 2, сглаживание ≥ 1, зона от 1 до 49.', params:[['n','Период',14],['d','Сглаж. D',3],['z','Зона',20]], ok:p=>p.n>=2&&p.d>=1&&p.z>0&&p.z<50, make:p=>new Fn('Stochastic', p.n+p.d, (c,d)=>{
+    const K=c.map((x,i)=>{ if(i<p.n-1) return NaN; const h=hh(d,i,p.n), l=ll(d,i,p.n); return (x-l)/((h-l)||1)*100; });
+    return {K, D:sma(K,p.d)};
+  }, (s,i)=>S2(cu(s.K,s.D,i)&&Math.min(s.K[i-1],s.D[i-1])<p.z, cd(s.K,s.D,i)&&Math.max(s.K[i-1],s.D[i-1])>100-p.z))},
+  cci:{label:'CCI Reversal', err:'период ≥ 2, уровень больше 0.', params:[['n','Период',20],['l','Уровень',100]], ok:p=>p.n>=2&&p.l>0, make:p=>new Fn('CCI_Reversal', p.n+1, (c,d)=>{
+    const tp=d.map(x=>(x.high+x.low+x.close)/3), m=sma(tp,p.n);
+    return tp.map((x,i)=>{ if(i<p.n-1) return NaN; let s=0; for(let j=i-p.n+1;j<=i;j++) s+=Math.abs(tp[j]-m[i]); return (x-m[i])/(0.015*(s/p.n)||1); });
+  }, (s,i)=>S2(s[i-1]<-p.l&&s[i]>=-p.l, s[i-1]>p.l&&s[i]<=p.l))},
+  kel:{label:'Keltner Breakout', err:'период ≥ 2, множитель больше 0.', params:[['n','Период',20],['k','Множитель ATR',2]], ok:p=>p.n>=2&&p.k>0, make:p=>new Fn('Keltner_Breakout', p.n+1, (c,d)=>{
+    const m=ema(c,p.n), a=wil(trArr(d),p.n);
+    return {c, u:m.map((x,i)=>x+p.k*a[i]), l:m.map((x,i)=>x-p.k*a[i])};
+  }, (s,i)=>S2(s.c[i-1]<=s.u[i-1]&&s.c[i]>s.u[i], s.c[i-1]>=s.l[i-1]&&s.c[i]<s.l[i]))},
+  sma:{label:'SMA Cross', err:'быстрая SMA должна быть меньше медленной.', params:[['f','Быстрая',20],['s','Медленная',50]], ok:p=>p.f>=1&&p.s>p.f, make:p=>new Fn('SMA_Cross', p.s+1, c=>({f:sma(c,p.f), s:sma(c,p.s)}), (s,i)=>S2(cu(s.f,s.s,i), cd(s.f,s.s,i)))},
+  msig:{label:'MACD Signal Cross', err:'быстрая EMA должна быть меньше медленной.', params:[['f','Быстрая',12],['s','Медленная',26],['g','Сигнал',9]], ok:p=>p.f>=1&&p.s>p.f&&p.g>=1, make:p=>new Fn('MACD_Signal_Cross', p.s+p.g, c=>{ const m=macdLine(c,p.f,p.s); return {m, g:ema(m,p.g)}; }, (s,i)=>S2(cu(s.m,s.g,i), cd(s.m,s.g,i)))},
+  adx:{label:'ADX + DI', err:'период ≥ 2, порог ADX от 0.', params:[['n','Период',14],['t','Порог ADX',20]], ok:p=>p.n>=2&&p.t>=0, make:p=>new Fn('ADX_DI', 3*p.n, (c,d)=>{
+    const pm=d.map((x,i)=>{ if(!i) return 0; const u=x.high-d[i-1].high, w=d[i-1].low-x.low; return u>w&&u>0?u:0; });
+    const mm=d.map((x,i)=>{ if(!i) return 0; const u=x.high-d[i-1].high, w=d[i-1].low-x.low; return w>u&&w>0?w:0; });
+    const tr=wil(trArr(d),p.n), pd=wil(pm,p.n).map((x,i)=>100*x/tr[i]), md=wil(mm,p.n).map((x,i)=>100*x/tr[i]);
+    const dx=pd.map((x,i)=>{ const v=100*Math.abs(x-md[i])/(x+md[i]); return isNaN(v)?0:v; });
+    const ax=[0]; for(let i=1;i<dx.length;i++) ax.push(ax[i-1]+(dx[i]-ax[i-1])/p.n);
+    return {pd, md, ax};
+  }, (s,i)=>S2(cu(s.pd,s.md,i)&&s.ax[i]>p.t, cd(s.pd,s.md,i)&&s.ax[i]>p.t))},
+  sar:{label:'Parabolic SAR', err:'шаг больше 0, максимум не меньше шага.', params:[['a','Шаг',0.02],['m','Максимум',0.2]], ok:p=>p.a>0&&p.m>=p.a, make:p=>new Fn('Parabolic_SAR', 2, (c,d)=>{
+    const o=[1], sv=[d[0].low]; o.sv=sv; let up=true, sr=d[0].low, ep=d[0].high, af=p.a;
+    for(let i=1;i<d.length;i++){
+      sr += af*(ep-sr);
+      const p2=d[Math.max(i-2,0)];
+      if(up){
+        sr=Math.min(sr,d[i-1].low,p2.low);
+        if(d[i].low<sr){ up=false; sr=ep; ep=d[i].low; af=p.a; } else if(d[i].high>ep){ ep=d[i].high; af=Math.min(af+p.a,p.m); }
+      }else{
+        sr=Math.max(sr,d[i-1].high,p2.high);
+        if(d[i].high>sr){ up=true; sr=ep; ep=d[i].high; af=p.a; } else if(d[i].low<ep){ ep=d[i].low; af=Math.min(af+p.a,p.m); }
+      }
+      o.push(up?1:-1); sv.push(sr);
+    }
+    return o;
+  }, (s,i)=>S2(s[i-1]===-1&&s[i]===1, s[i-1]===1&&s[i]===-1))},
+  roc:{label:'Momentum (ROC)', err:'период ≥ 1.', params:[['n','Период',10]], ok:p=>p.n>=1, make:p=>new Fn('Momentum_ROC', p.n+1, c=>c.map((x,i)=>i<p.n?NaN:x/c[i-p.n]-1), (s,i)=>S2(s[i-1]<=0&&s[i]>0, s[i-1]>=0&&s[i]<0))},
+  ao:{label:'Awesome Oscillator', err:'быстрый период должен быть меньше медленного.', params:[['f','Быстрая',5],['s','Медленная',34]], ok:p=>p.f>=1&&p.s>p.f, make:p=>new Fn('Awesome_Osc', p.s+1, (c,d)=>{ const md=d.map(x=>(x.high+x.low)/2), a=sma(md,p.f), b=sma(md,p.s); return a.map((x,i)=>x-b[i]); }, (s,i)=>S2(s[i-1]<=0&&s[i]>0, s[i-1]>=0&&s[i]<0))},
+  aro:{label:'Aroon Cross', err:'период ≥ 2.', params:[['n','Период',25]], ok:p=>p.n>=2, make:p=>new Fn('Aroon_Cross', p.n+1, (c,d)=>{
+    const u=[], l=[];
+    for(let i=0;i<d.length;i++){
+      if(i<p.n){ u.push(NaN); l.push(NaN); continue; }
+      let kh=i-p.n, kl=i-p.n;
+      for(let j=i-p.n;j<=i;j++){ if(d[j].high>=d[kh].high) kh=j; if(d[j].low<=d[kl].low) kl=j; }
+      u.push(100*(kh-(i-p.n))/p.n); l.push(100*(kl-(i-p.n))/p.n);
+    }
+    return {u, l};
+  }, (s,i)=>S2(cu(s.u,s.l,i), cd(s.u,s.l,i)))},
+};
+const P = {};
+for(const [id,S] of Object.entries(STRATS)) P[id] = Object.fromEntries(S.params.map(([k,,v])=>[k,v]));
+const stratSel = $('strat');
+stratSel.innerHTML = Object.entries(STRATS).map(([id,S])=>`<option value="${id}">${S.label}</option>`).join('');
+function showParams(){
+  const id = stratSel.value;
+  $('sparams').innerHTML = STRATS[id].params.map(([k,l])=>`<div><label>${l}</label><input type="number" data-k="${k}" value="${P[id][k]}" step="any" inputmode="decimal"></div>`).join('');
+  $('sparams').querySelectorAll('input').forEach(inp=>{ inp.oninput = ()=>{ P[id][inp.dataset.k] = parseFloat(inp.value); }; });
+}
+stratSel.onchange = showParams; showParams();
+$('study-list').innerHTML = Object.entries(STRATS).map(([id,S])=>`<label style="display:flex;gap:8px;align-items:center;color:var(--text)"><input type="checkbox" class="use-st" id="use-${id}" ${id==='macd'||id==='ema'?'checked':''} style="width:auto"> ${S.label}</label>`).join('');
+
+$('ctr-list').innerHTML = Object.values(CONTRACTS).map(c=>`<label style="display:flex;gap:8px;align-items:center;color:var(--text)"><input type="checkbox" class="use-ct" value="${c.secid}" checked style="width:auto"> ${c.secid} — ${c.title}</label>`).join('');
+function bindAll(allId, sel){
+  const all = $(allId), items = ()=>[...document.querySelectorAll(sel)];
+  const sync = ()=>{ const a = items(); all.checked = a.every(x=>x.checked); all.indeterminate = !all.checked && a.some(x=>x.checked); };
+  all.onchange = ()=>{ items().forEach(x=>{ x.checked = all.checked; }); sync(); };
+  items().forEach(x=>{ x.onchange = sync; }); sync();
+}
+bindAll('all-st', '.use-st'); bindAll('all-ct', '.use-ct');
+
+/* ---------- График цены: свечи, индикаторы, сделки ---------- */
+const COL = ['#2F6FED','#F59E0B','#8B5CF6','#EC4899','#14B8A6'];
+/* over — линии на цене, sub — осциллятор в отдельной панели, lv — уровни */
+const VIZ = {
+  macd:st=>({sub:[['MACD',st.macd]],lv:[0]}),
+  ema:st=>({over:[['EMA '+st.fast,st.f],['EMA '+st.slow,st.s]]}),
+  rsi:st=>({sub:[['RSI',st.r]],lv:[st.lo,st.hi]}),
+  bb:st=>({over:[['Середина',st.m],['Верх',st.m.map((x,i)=>x+st.k*st.sd[i])],['Низ',st.m.map((x,i)=>x-st.k*st.sd[i])]]}),
+  don:(st,d)=>({over:[['Макс '+st.n,d.map((_,i)=>i<st.n?NaN:hh(d,i-1,st.n))],['Мин '+st.n,d.map((_,i)=>i<st.n?NaN:ll(d,i-1,st.n))]]}),
+  st:st=>({over:[['Supertrend',st.line]]}),
+  stoch:(st,d,p)=>({sub:[['%K',st.s.K],['%D',st.s.D]],lv:[p.z,100-p.z]}),
+  cci:(st,d,p)=>({sub:[['CCI',st.s]],lv:[-p.l,p.l]}),
+  kel:st=>({over:[['Верх',st.s.u],['Низ',st.s.l]]}),
+  sma:(st,d,p)=>({over:[['SMA '+p.f,st.s.f],['SMA '+p.s,st.s.s]]}),
+  msig:st=>({sub:[['MACD',st.s.m],['Сигнал',st.s.g]],lv:[0]}),
+  adx:(st,d,p)=>({sub:[['+DI',st.s.pd],['−DI',st.s.md],['ADX',st.s.ax]],lv:[p.t]}),
+  sar:st=>({over:[['SAR',st.s.sv,'dots']]}),
+  roc:st=>({sub:[['ROC',st.s]],lv:[0]}),
+  ao:st=>({sub:[['AO',st.s]],lv:[0]}),
+  aro:st=>({sub:[['Aroon Up',st.s.u],['Aroon Down',st.s.l]],lv:[]}),
+};
+function chartSvg(data, trades, v, W, showInd, showTr, a0, b0){
+  const N=b0-a0, pl=54, pr=8, H1=300, subs=(showInd&&v.sub)||[], H2=subs.length?110:0, gap=H2?16:0, H=H1+gap+H2+22;
+  const sx=(W-pl-pr)/N, X=i=>pl+(i-a0+.5)*sx;
+  let mn=Infinity, mx=-Infinity;
+  for(const c of data.slice(a0,b0)){ mn=Math.min(mn,c.low); mx=Math.max(mx,c.high); }
+  const pad=(mx-mn)*.04||1; mn-=pad; mx+=pad;
+  const Y=p=>6+(1-(p-mn)/(mx-mn))*(H1-12);
+  const path=(a,y)=>{ let d='', on=false; a.forEach((val,i)=>{ if(i>=a0&&i<b0&&isFinite(val)){ d+=(on?'L':'M')+X(i).toFixed(1)+' '+y(val).toFixed(1); on=true; } else on=false; }); return d; };
+  let s=`<defs><clipPath id="cp"><rect x="${pl}" y="0" width="${W-pl-pr}" height="${H1}"/></clipPath></defs>`;
+  for(let k=0;k<=4;k++){ const p=mn+(mx-mn)*k/4, y=Y(p); s+=`<line x1="${pl}" x2="${W-pr}" y1="${y}" y2="${y}" stroke="var(--line)"/><text x="2" y="${y+4}" font-size="10" fill="var(--muted)">${fmt(p,p<20?3:(p<1000?2:1))}</text>`; }
+  const bw=Math.max(1,sx*.7);
+  s+='<g clip-path="url(#cp)">';
+  data.forEach((c,i)=>{ if(i<a0||i>=b0) return; const col=c.close>=c.open?'var(--green)':'var(--red)', x=X(i), y1=Y(c.open), y2=Y(c.close);
+    s+=`<line x1="${x}" x2="${x}" y1="${Y(c.high)}" y2="${Y(c.low)}" stroke="${col}"/><rect x="${x-bw/2}" y="${Math.min(y1,y2)}" width="${bw}" height="${Math.max(1,Math.abs(y1-y2))}" fill="${col}"/>`; });
+  if(showInd) (v.over||[]).forEach(([n,a,t],k)=>{ s += t==='dots' ? a.map((val,i)=>isFinite(val)&&i>=a0&&i<b0?`<circle cx="${X(i)}" cy="${Y(val)}" r="1.8" fill="${COL[k]}"/>`:'').join('') : `<path d="${path(a,Y)}" fill="none" stroke="${COL[k]}" stroke-width="1.5"/>`; });
+  if(showTr){
+    const ix=new Map(data.map((c,i)=>[c.datetime.getTime(),i]));
+    trades.forEach(t=>{
+      const a=ix.get(t.entryTime.getTime()), b=ix.get(t.exitTime.getTime()); if(a==null||b==null||b<a0||a>=b0) return;
+      const win=t.profit>=0, col=win?'var(--green)':'var(--red)', long=t.direction==='LONG', xa=X(a), ya=Y(t.entryPrice), xb=X(b), yb=Y(t.exitPrice);
+      s+=`<line x1="${xa}" y1="${ya}" x2="${xb}" y2="${yb}" stroke="${col}" stroke-dasharray="3 3" stroke-width="1.3"/>`
+        +`<path d="${long?`M${xa} ${ya}l-5 9h10z`:`M${xa} ${ya}l-5-9h10z`}" fill="${long?'var(--green)':'var(--red)'}"><title>${t.direction} ${fmtDate(t.entryTime)} @ ${fmt(t.entryPrice)}</title></path>`
+        +`<circle cx="${xb}" cy="${yb}" r="3.5" fill="var(--panel)" stroke="${col}" stroke-width="1.5"><title>Выход ${fmtDate(t.exitTime)} @ ${fmt(t.exitPrice)}, P&amp;L ${fmt(t.profit)} ₽</title></circle>`;
+    });
+  }
+  s+='</g>';
+  const vals = subs.flatMap(([,a])=>a.slice(a0,b0)).concat(v.lv||[]).filter(isFinite);
+  if(H2 && vals.length){
+    const y0=H1+gap; let a=Math.min(...vals), b=Math.max(...vals); if(a===b){ a-=1; b+=1; }
+    const Y2=p=>y0+4+(1-(p-a)/(b-a))*(H2-8), nf=x=>fmt(x,Math.abs(x)<10?3:1);
+    s+=`<rect x="${pl}" y="${y0}" width="${W-pl-pr}" height="${H2}" fill="none" stroke="var(--line)"/><text x="2" y="${y0+12}" font-size="10" fill="var(--muted)">${nf(b)}</text><text x="2" y="${y0+H2-2}" font-size="10" fill="var(--muted)">${nf(a)}</text>`;
+    (v.lv||[]).forEach(l=>{ s+=`<line x1="${pl}" x2="${W-pr}" y1="${Y2(l)}" y2="${Y2(l)}" stroke="var(--muted)" stroke-dasharray="4 4"/>`; });
+    subs.forEach(([n,arr],k)=>{ s+=`<path d="${path(arr,Y2)}" fill="none" stroke="${COL[k]}" stroke-width="1.5"/>`; });
+  }
+  for(let k=0;k<=4;k++){
+    const i=a0+Math.round((N-1)*k/4), t=data[i].datetime.toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    s+=`<text x="${X(i)}" y="${H-5}" font-size="10" fill="var(--muted)" text-anchor="${k===0?'start':(k===4?'end':'middle')}">${t}</text>`;
+  }
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="display:block">${s}</svg>`;
+}
+function addChart(strategy, sid, data, trades, secid, tf, p, host){
+  try{
+    const v = (VIZ[sid] || (()=>({})))(strategy, data, p || P[sid]);
+    const ctx = {a: host ? Math.max(0, data.length-200) : 0, b: data.length, W: 300};
+    const put = html => host ? (host.innerHTML = html) : document.querySelector('#out .metrics').insertAdjacentHTML('afterend', html);
+    const lab = 'display:flex;gap:6px;align-items:center';
+    put(`<div class="panel"><h2>График <span class="mono">${esc(secid)}, ${tf}</span></h2><div style="display:flex;gap:16px;margin-bottom:10px;font-size:12px"><label style="${lab}"><input type="checkbox" id="ch-ind" checked style="width:auto"> Индикаторы</label><label style="${lab}"><input type="checkbox" id="ch-tr" checked style="width:auto"> Сделки</label></div><div class="tb"><button class="btn sec" id="ch-zi" title="Приблизить">+</button><button class="btn sec" id="ch-zo" title="Отдалить">−</button><button class="btn sec" id="ch-pl" title="Назад">←</button><button class="btn sec" id="ch-pr" title="Вперёд">→</button><button class="btn sec" id="ch-all">Всё</button><span class="mono" id="ch-rng" style="font-size:11px;color:var(--muted)"></span></div><div id="chart-body" style="touch-action:pan-y;cursor:grab"></div><div class="hint" id="chart-lg"></div></div>`);
+    const draw = ()=>{
+      const ind = $('ch-ind').checked, tr = $('ch-tr').checked, el = $('chart-body');
+      ctx.W = Math.max(300, el.clientWidth); el.innerHTML = chartSvg(data, trades, v, ctx.W, ind, tr, ctx.a, ctx.b); $('ch-rng').textContent = `свечи ${ctx.a+1}–${ctx.b} из ${data.length}`;
+      const lg = (arr)=>(arr||[]).map(([n],k)=>`<span style="color:${COL[k]}">■</span> ${esc(n)}`);
+      $('chart-lg').innerHTML = [...(ind ? [...lg(v.over), ...lg(v.sub)] : []), ...(tr ? ['<span class="pos">▲</span> лонг', '<span class="neg">▼</span> шорт', '○ выход (цвет — прибыль/убыток)'] : [])].join(' &nbsp; ');
+    };
+    $('ch-ind').onchange = draw; $('ch-tr').onchange = draw; draw();
+    const N = data.length, minW = Math.min(N, 10), el = $('chart-body');
+    const setR = (a, w)=>{ w = Math.max(minW, Math.min(N, Math.round(w))); a = Math.max(0, Math.min(N-w, Math.round(a))); ctx.a = a; ctx.b = a+w; draw(); };
+    const zoom = (f, cx=.5)=>{ const w = ctx.b-ctx.a, nw = w*f; setR(ctx.a+(w-nw)*cx, nw); };
+    const pan = f=>{ const w = ctx.b-ctx.a; setR(ctx.a+w*f, w); };
+    $('ch-zi').onclick = ()=>zoom(.6); $('ch-zo').onclick = ()=>zoom(1/.6);
+    $('ch-pl').onclick = ()=>pan(-.4); $('ch-pr').onclick = ()=>pan(.4); $('ch-all').onclick = ()=>setR(0, N);
+    el.onwheel = e=>{ e.preventDefault(); const r = el.getBoundingClientRect(); zoom(e.deltaY<0 ? .8 : 1.25, Math.max(0, Math.min(1, (e.clientX-r.left-54)/(r.width-62)))); };
+    let drag = null;
+    el.onpointerdown = e=>{ drag = {x:e.clientX, a:ctx.a}; el.setPointerCapture(e.pointerId); };
+    el.onpointermove = e=>{ if(!drag) return; const w = ctx.b-ctx.a; setR(drag.a-(e.clientX-drag.x)/((ctx.W-62)/w), w); };
+    el.onpointerup = el.onpointercancel = ()=>{ drag = null; };
+  }catch(e){ console.error(e); }
+}
+
+function openRowChart(r, tf){
+  const data = dataCache[r.secid+tf]; if(!data) return;
+  const st = STRATS[r.sid].make(r.p), spec = CONTRACTS[r.secid];
+  const pf = new Portfolio(r.init), eng = new ExecutionEngine(pf, {strategy:st.name, instrument:r.secid, timeframe:tf}, r.com, spec.tickValue/spec.tick);
+  const trades = runBacktest(st, eng, data, r.n);
+  const host = $('study-chart');
+  addChart(st, r.sid, data, trades, r.secid, tf, r.p, host);
+  host.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+$('run').onclick = async ()=>{
+  const btn = $('run'), reset = ()=>{ btn.disabled = false; btn.textContent = 'Запустить бэктест'; };
+  const secid = contractSel.value, spec = CONTRACTS[secid];
+  const tf = $('tf').value;
+  const sid = $('strat').value, S = STRATS[sid];
+  const n = parseInt($('ctr').value), init = parseFloat($('bal').value), com = parseFloat($('com').value) || 0;
+  if(!(S.ok(P[sid]) && n >= 1 && init >= 0)){
+    alert('Проверьте параметры: ' + S.err); return;
+  }
+  btn.disabled = true; btn.textContent = 'Загрузка…';
+  let data;
+  try{
+    data = await provider.getCandles(secid, tf, msg=>{ btn.textContent = msg; });
+  }catch(e){
+    $('out').innerHTML = `<div class="panel err"><b>Не удалось загрузить данные</b><br>${esc(e.message)}</div>`;
+    reset(); return;
+  }
+  const strategy = S.make(P[sid]);
+  if(data.length < strategy.need + 2){
+    $('out').innerHTML = `<div class="panel err"><b>Мало данных</b><br>Получено свечей: ${data.length}, для этих параметров нужно минимум ${strategy.need+2}. Выберите более мелкий таймфрейм или другие периоды.</div>`;
+    reset(); return;
+  }
+  const pf = new Portfolio(init);
+  const engine = new ExecutionEngine(pf, {strategy:strategy.name, instrument:secid, timeframe:tf}, com, spec.tickValue/spec.tick);
+  const trades = runBacktest(strategy, engine, data, n);
+  render(trades, metrics(trades, init), init, pf.balance, {secid, tf, candles:data.length});
+  addChart(strategy, sid, data, trades, secid, tf);
+  reset();
+};
+/* ---------- Годовой разбор по неделям ---------- */
+function weeklyPnl(eq, init){
+  const m = new Map();
+  for(const [d,e] of eq){
+    const k = new Date(d); k.setHours(0,0,0,0); k.setDate(k.getDate() - (k.getDay()+6)%7);
+    m.set(k.getTime(), e); // остаётся капитал последней свечи недели
+  }
+  let prev = init;
+  return [...m.keys()].sort((a,b)=>a-b).map(k=>{ const e = m.get(k), w = {start:new Date(k), pnl:e-prev}; prev = e; return w; });
+}
+function maxDd(eq){ let pk = eq[0][1], dd = 0; for(const [,e] of eq){ pk = Math.max(pk,e); dd = Math.max(dd, pk-e); } return dd; }
+
+const dataCache = {};
+let studyWeeks = [];
+let studySort = {k:null, dir:1};
+
+function renderStudy(rows, tf){
+  const cls = v => v>0 ? 'pos' : (v<0 ? 'neg' : '');
+  const day = d => d.toISOString().slice(0,10);
+  const key = {c:r=>r.secid, s:r=>r.name, w:r=>r.wk.length, t:r=>r.total, p:r=>r.pos, x:r=>r.worst, d:r=>r.dd, n:r=>r.trades}[studySort.k];
+  const order = rows.map((_,i)=>i).sort((a,b)=>{ const A=rows[a], B=rows[b]; if(A.err||B.err) return (A.err?1:0)-(B.err?1:0); if(!key) return 0; const x=key(A), y=key(B); return (typeof x==='string' ? x.localeCompare(y) : x-y) * studySort.dir; });
+  const th = (k,l)=>`<th data-k="${k}">${l}${studySort.k===k ? (studySort.dir>0 ? ' ▲' : ' ▼') : ''}</th>`;
+  const body = order.map(ri=>{ const r = rows[ri]; return r.err
+    ? `<tr><td>${r.secid}</td><td>${r.name}</td><td colspan="8" class="neg">${esc(r.err)}</td></tr>`
+    : `<tr><td>${r.secid}</td><td>${r.name}</td><td>${r.wk.length}</td><td class="${cls(r.total)}">${fmt(r.total,0)}</td><td>${fmt(r.pos,0)}%</td><td class="neg">${fmt(r.worst,0)}</td><td>${fmt(r.dd,0)}</td><td>${r.trades}</td><td><div class="wk">${r.wk.map(w=>`<i title="${day(w.start)}: ${fmt(w.pnl,0)} ₽" style="background:var(--${w.pnl>0?'green':(w.pnl<0?'red':'line')})"></i>`).join('')}</div></td><td><button class="link" data-i="${ri}">График</button></td></tr>`; }).join('');
+  $('out').innerHTML = `<div class="panel"><h2>Разбор за год по неделям <button class="link" id="exp-wk">Экспорт недель CSV</button></h2>
+    <div class="scroll"><table style="min-width:780px"><thead><tr>${th('c','Контракт')}${th('s','Стратегия')}${th('w','Нед.')}${th('t','Итог ₽')}${th('p','Прибыльных')}${th('x','Худшая')}${th('d','Просадка')}${th('n','Сделок')}<th>Недели</th><th></th></tr></thead><tbody>${body}</tbody></table></div>
+    <div class="hint">${tf}, 365 дней, ₽ на выбранное число контрактов. Неделя — изменение капитала с учётом открытой позиции, сумма недель равна итогу. Зелёный квадрат — прибыльная неделя, красный — убыточная. Фандинг не учитывается. Итоги по истории показывают устойчивость, а не прогноз.</div></div><div id="study-chart"></div>`;
+  $('out').querySelectorAll('th[data-k]').forEach(h=>{ h.onclick = ()=>{ const k = h.dataset.k; studySort = studySort.k===k ? {k, dir:-studySort.dir} : {k, dir:(k==='c'||k==='s') ? 1 : -1}; renderStudy(rows, tf); }; });
+  $('out').querySelectorAll('button[data-i]').forEach(b=>{ b.onclick = ()=>openRowChart(rows[+b.dataset.i], tf); });
+  $('exp-wk').onclick = ()=>{
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([['contract,strategy,week_start,pnl', ...studyWeeks.map(r=>r.join(','))].join('\n')], {type:'text/csv'}));
+    a.download = 'weekly.csv'; a.click(); URL.revokeObjectURL(a.href);
+  };
+}
+
+$('study').onclick = async ()=>{
+  const btn = $('study'), reset = ()=>{ btn.disabled = false; btn.textContent = 'Разбор за год по неделям'; };
+  const tf = $('tf').value;
+  const n = parseInt($('ctr').value), init = parseFloat($('bal').value), com = parseFloat($('com').value) || 0;
+  const ids = Object.keys(STRATS).filter(id=>$('use-'+id).checked);
+  if(!ids.length){ alert('Выберите хотя бы одну стратегию.'); return; }
+  const secids = [...document.querySelectorAll('.use-ct:checked')].map(x=>x.value);
+  if(!secids.length){ alert('Выберите хотя бы один фьючерс.'); return; }
+  const bad = ids.find(id=>!STRATS[id].ok(P[id]));
+  if(bad || !(n>=1 && init>=0)){ alert(bad ? 'Проверьте параметры «'+STRATS[bad].label+'»: '+STRATS[bad].err : 'Проверьте число контрактов и баланс.'); return; }
+  const makers = ids.map(id=>Object.assign(()=>STRATS[id].make(P[id]), {id}));
+  if(tf === 'M30'){ $('out').innerHTML = '<div class="panel err">За год на M30 нужны сотни запросов к MOEX. Выберите H1, H4 или D1.</div>'; return; }
+  btn.disabled = true;
+  const rows = [];
+  studyWeeks = [];
+  try{
+    for(const secid of secids){
+      btn.textContent = `Загрузка ${secid}…`;
+      const key = secid + tf;
+      if(!dataCache[key]) dataCache[key] = await provider.getCandles(secid, tf, null, 365);
+      const data = dataCache[key], spec = CONTRACTS[secid];
+      for(const mk of makers){
+        const st = mk();
+        if(data.length < st.need + 2){ rows.push({secid, name:st.name, err:`мало данных (${data.length} свечей)`}); continue; }
+        const pf = new Portfolio(init);
+        const eng = new ExecutionEngine(pf, {strategy:st.name, instrument:secid, timeframe:tf}, com, spec.tickValue/spec.tick);
+        const trades = runBacktest(st, eng, data, n);
+        const wk = weeklyPnl(eng.eq, init), p = wk.map(w=>w.pnl);
+        rows.push({secid, sid:mk.id, p:{...P[mk.id]}, init, com, n, name:st.name, wk, total:pf.balance-init, pos:p.filter(x=>x>0).length/p.length*100, worst:Math.min(...p), dd:maxDd(eng.eq), trades:trades.length});
+        wk.forEach(w=>studyWeeks.push([secid, st.name, w.start.toISOString().slice(0,10), w.pnl.toFixed(2)]));
+      }
+    }
+  }catch(e){
+    $('out').innerHTML = `<div class="panel err"><b>Не удалось загрузить данные</b><br>${esc(e.message)}</div>`;
+    reset(); return;
+  }
+  renderStudy(rows, tf);
+  reset();
+};
+</script>
+</body>
+</html>
