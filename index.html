@@ -54,6 +54,11 @@ td{padding:7px 8px;border-bottom:1px solid var(--line)}
 .wk{display:flex;gap:1px}.wk i{width:5px;height:16px;flex:none}
 .empty{text-align:center;color:var(--muted);padding:50px 16px;font-size:13px}
 .tb{display:flex;gap:6px;align-items:center;margin-bottom:10px;flex-wrap:wrap}.tb .btn{width:auto;padding:5px 12px;font-size:13px}
+.wk i[data-w]{cursor:pointer}
+.help{position:relative;display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;border:1px solid var(--muted);color:var(--muted);font-size:11px;font-weight:600;cursor:help;margin-left:2px;vertical-align:middle;outline:none;text-transform:none;line-height:1}
+.help:hover,.help:focus{color:var(--accent);border-color:var(--accent)}
+.help .tip{display:none;position:absolute;left:0;top:22px;z-index:30;width:min(300px,78vw);padding:10px 12px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.25);font-size:12px;font-weight:400;line-height:1.45;text-align:left;white-space:normal;cursor:default}
+.help:hover .tip,.help:focus .tip{display:block}
 th[data-k]{cursor:pointer;user-select:none;white-space:nowrap}th[data-k]:hover{color:var(--text)}
 </style>
 </head>
@@ -84,7 +89,7 @@ th[data-k]{cursor:pointer;user-select:none;white-space:nowrap}th[data-k]:hover{c
         </select>
       </div>
       <div class="f">
-        <label>Стратегия</label>
+        <label>Стратегия <span id="strat-help"></span></label>
         <select id="strat"></select>
         <div class="r3" id="sparams" style="margin-top:8px"></div>
       </div>
@@ -454,6 +459,25 @@ function render(trades, m, init, finalBal, meta){
   };
 }
 
+const DESC = {
+  macd:'Трендовая. Лонг, когда линия MACD (разность быстрой и медленной EMA) пересекает ноль снизу вверх, шорт — сверху вниз. Хороша на трендах, в боковике даёт много ложных сигналов.',
+  ema:'Трендовая. Лонг, когда быстрая EMA пересекает медленную снизу вверх, шорт — сверху вниз. Классика трендследования: запаздывает на разворотах и страдает в боковике.',
+  rsi:'Контртрендовая. Лонг, когда RSI возвращается выше нижнего уровня (выход из перепроданности), шорт — когда опускается ниже верхнего (выход из перекупленности). Хороша в боковике, опасна в сильном тренде.',
+  bb:'Контртрендовая. Лонг, когда цена вышла ниже нижней полосы Боллинджера и вернулась внутрь канала, шорт — зеркально у верхней. Ставит на возврат к средней.',
+  don:'Пробойная. Лонг при закрытии выше максимума за N предыдущих свечей, шорт при закрытии ниже минимума. Ловит начало сильных трендов, в боковике много ложных пробоев.',
+  st:'Трендовая. Линия-стоп на основе ATR следует за ценой, сигнал возникает при смене направления линии. Больше множитель — реже сигналы и шире стоп.',
+  stoch:'Контртрендовая. Лонг, когда %K пересекает %D снизу вверх в зоне перепроданности, шорт — сверху вниз в зоне перекупленности. Параметр «Зона» задаёт границы: 20 означает уровни 20 и 80.',
+  cci:'Контртрендовая. Лонг, когда CCI возвращается выше отрицательного уровня, шорт — когда опускается ниже положительного (обычно ±100). CCI показывает, насколько цена отклонилась от средней.',
+  kel:'Пробойная. Канал строится от EMA на ±k·ATR. Лонг при закрытии выше верхней границы, шорт — ниже нижней. В отличие от Боллинджера ширина канала зависит от ATR, а не от стандартного отклонения.',
+  sma:'Трендовая. Как EMA Cross, но на простых скользящих средних: лонг при пересечении быстрой SMA медленной снизу вверх, шорт при обратном. Реагирует медленнее, чем EMA.',
+  msig:'Трендовая. Лонг, когда линия MACD пересекает сигнальную снизу вверх, шорт — сверху вниз. Сигналов больше, чем у MACD Zero Line, но и шума тоже больше.',
+  adx:'Трендовая, с фильтром силы тренда. Лонг, когда +DI пересекает −DI снизу вверх, шорт при обратном, но только если ADX выше порога. Отсекает сделки в боковике, но входит позже.',
+  sar:'Трендовая. Точки Parabolic SAR следуют за ценой с ускорением; при касании ценой позиция разворачивается. Шаг и максимум ускорения задают чувствительность.',
+  roc:'Импульсная. Лонг, когда изменение цены за N свечей становится положительным, шорт — когда отрицательным. Простейший способ торговать в сторону текущего движения.',
+  ao:'Импульсная. Awesome Oscillator — разность SMA медианной цены (по умолчанию 5 и 34). Лонг при пересечении нуля вверх, шорт — вниз.',
+  aro:'Трендовая. Aroon измеряет, как давно был максимум и минимум за период. Лонг, когда Aroon Up пересекает Aroon Down снизу вверх, шорт — наоборот.',
+};
+const help = id => `<span class="help" tabindex="0">?<span class="tip">${DESC[id]}</span></span>`;
 /* ---------- Реестр стратегий ---------- */
 const STRATS = {
   macd:{label:'MACD Zero Line', err:'быстрая EMA должна быть меньше медленной.', params:[['fast','Быстрая',12],['slow','Медленная',26],['sig','Сигнал',9]], ok:p=>p.fast>=1&&p.slow>p.fast&&p.sig>=1, make:p=>new MACDZeroLine(p.fast,p.slow,p.sig)},
@@ -519,11 +543,12 @@ const stratSel = $('strat');
 stratSel.innerHTML = Object.entries(STRATS).map(([id,S])=>`<option value="${id}">${S.label}</option>`).join('');
 function showParams(){
   const id = stratSel.value;
+  $('strat-help').innerHTML = help(id);
   $('sparams').innerHTML = STRATS[id].params.map(([k,l])=>`<div><label>${l}</label><input type="number" data-k="${k}" value="${P[id][k]}" step="any" inputmode="decimal"></div>`).join('');
   $('sparams').querySelectorAll('input').forEach(inp=>{ inp.oninput = ()=>{ P[id][inp.dataset.k] = parseFloat(inp.value); }; });
 }
 stratSel.onchange = showParams; showParams();
-$('study-list').innerHTML = Object.entries(STRATS).map(([id,S])=>`<label style="display:flex;gap:8px;align-items:center;color:var(--text)"><input type="checkbox" class="use-st" id="use-${id}" ${id==='macd'||id==='ema'?'checked':''} style="width:auto"> ${S.label}</label>`).join('');
+$('study-list').innerHTML = Object.entries(STRATS).map(([id,S])=>`<div style="display:flex;gap:6px;align-items:center"><label style="display:flex;gap:8px;align-items:center;color:var(--text)"><input type="checkbox" class="use-st" id="use-${id}" ${id==='macd'||id==='ema'?'checked':''} style="width:auto"> ${S.label}</label>${help(id)}</div>`).join('');
 
 $('ctr-list').innerHTML = Object.values(CONTRACTS).map(c=>`<label style="display:flex;gap:8px;align-items:center;color:var(--text)"><input type="checkbox" class="use-ct" value="${c.secid}" checked style="width:auto"> ${c.secid} — ${c.title}</label>`).join('');
 function bindAll(allId, sel){
@@ -555,7 +580,7 @@ const VIZ = {
   ao:st=>({sub:[['AO',st.s]],lv:[0]}),
   aro:st=>({sub:[['Aroon Up',st.s.u],['Aroon Down',st.s.l]],lv:[]}),
 };
-function chartSvg(data, trades, v, W, showInd, showTr, a0, b0){
+function chartSvg(data, trades, v, W, showInd, showTr, a0, b0, hl){
   const N=b0-a0, pl=54, pr=8, H1=300, subs=(showInd&&v.sub)||[], H2=subs.length?110:0, gap=H2?16:0, H=H1+gap+H2+22;
   const sx=(W-pl-pr)/N, X=i=>pl+(i-a0+.5)*sx;
   let mn=Infinity, mx=-Infinity;
@@ -565,6 +590,7 @@ function chartSvg(data, trades, v, W, showInd, showTr, a0, b0){
   const path=(a,y)=>{ let d='', on=false; a.forEach((val,i)=>{ if(i>=a0&&i<b0&&isFinite(val)){ d+=(on?'L':'M')+X(i).toFixed(1)+' '+y(val).toFixed(1); on=true; } else on=false; }); return d; };
   let s=`<defs><clipPath id="cp"><rect x="${pl}" y="0" width="${W-pl-pr}" height="${H1}"/></clipPath></defs>`;
   for(let k=0;k<=4;k++){ const p=mn+(mx-mn)*k/4, y=Y(p); s+=`<line x1="${pl}" x2="${W-pr}" y1="${y}" y2="${y}" stroke="var(--line)"/><text x="2" y="${y+4}" font-size="10" fill="var(--muted)">${fmt(p,p<20?3:(p<1000?2:1))}</text>`; }
+  if(hl){ const x1=Math.max(pl,X(hl[0])-sx/2), x2=Math.min(W-pr,X(hl[1]-1)+sx/2); if(x2>x1) s+=`<rect x="${x1}" y="0" width="${x2-x1}" height="${H1}" fill="var(--muted)" opacity=".14"/>`; }
   const bw=Math.max(1,sx*.7);
   s+='<g clip-path="url(#cp)">';
   data.forEach((c,i)=>{ if(i<a0||i>=b0) return; const col=c.close>=c.open?'var(--green)':'var(--red)', x=X(i), y1=Y(c.open), y2=Y(c.close);
@@ -595,16 +621,16 @@ function chartSvg(data, trades, v, W, showInd, showTr, a0, b0){
   }
   return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="display:block">${s}</svg>`;
 }
-function addChart(strategy, sid, data, trades, secid, tf, p, host){
+function addChart(strategy, sid, data, trades, secid, tf, p, host, view){
   try{
     const v = (VIZ[sid] || (()=>({})))(strategy, data, p || P[sid]);
-    const ctx = {a: host ? Math.max(0, data.length-200) : 0, b: data.length, W: 300};
+    const ctx = {a: view ? view.a : (host ? Math.max(0, data.length-200) : 0), b: view ? view.b : data.length, hl: view ? view.hl : null, W: 300};
     const put = html => host ? (host.innerHTML = html) : document.querySelector('#out .metrics').insertAdjacentHTML('afterend', html);
     const lab = 'display:flex;gap:6px;align-items:center';
     put(`<div class="panel"><h2>График <span class="mono">${esc(secid)}, ${tf}</span></h2><div style="display:flex;gap:16px;margin-bottom:10px;font-size:12px"><label style="${lab}"><input type="checkbox" id="ch-ind" checked style="width:auto"> Индикаторы</label><label style="${lab}"><input type="checkbox" id="ch-tr" checked style="width:auto"> Сделки</label></div><div class="tb"><button class="btn sec" id="ch-zi" title="Приблизить">+</button><button class="btn sec" id="ch-zo" title="Отдалить">−</button><button class="btn sec" id="ch-pl" title="Назад">←</button><button class="btn sec" id="ch-pr" title="Вперёд">→</button><button class="btn sec" id="ch-all">Всё</button><span class="mono" id="ch-rng" style="font-size:11px;color:var(--muted)"></span></div><div id="chart-body" style="touch-action:pan-y;cursor:grab"></div><div class="hint" id="chart-lg"></div></div>`);
     const draw = ()=>{
       const ind = $('ch-ind').checked, tr = $('ch-tr').checked, el = $('chart-body');
-      ctx.W = Math.max(300, el.clientWidth); el.innerHTML = chartSvg(data, trades, v, ctx.W, ind, tr, ctx.a, ctx.b); $('ch-rng').textContent = `свечи ${ctx.a+1}–${ctx.b} из ${data.length}`;
+      ctx.W = Math.max(300, el.clientWidth); el.innerHTML = chartSvg(data, trades, v, ctx.W, ind, tr, ctx.a, ctx.b, ctx.hl); $('ch-rng').textContent = `свечи ${ctx.a+1}–${ctx.b} из ${data.length}`;
       const lg = (arr)=>(arr||[]).map(([n],k)=>`<span style="color:${COL[k]}">■</span> ${esc(n)}`);
       $('chart-lg').innerHTML = [...(ind ? [...lg(v.over), ...lg(v.sub)] : []), ...(tr ? ['<span class="pos">▲</span> лонг', '<span class="neg">▼</span> шорт', '○ выход (цвет — прибыль/убыток)'] : [])].join(' &nbsp; ');
     };
@@ -623,13 +649,22 @@ function addChart(strategy, sid, data, trades, secid, tf, p, host){
   }catch(e){ console.error(e); }
 }
 
-function openRowChart(r, tf){
+function openRowChart(r, tf, wi){
   const data = dataCache[r.secid+tf]; if(!data) return;
   const st = STRATS[r.sid].make(r.p), spec = CONTRACTS[r.secid];
   const pf = new Portfolio(r.init), eng = new ExecutionEngine(pf, {strategy:st.name, instrument:r.secid, timeframe:tf}, r.com, spec.tickValue/spec.tick);
   const trades = runBacktest(st, eng, data, r.n);
   const host = $('study-chart');
-  addChart(st, r.sid, data, trades, r.secid, tf, r.p, host);
+  let view = null;
+  if(wi != null){
+    const w = r.wk[wi], s = w.start.getTime(), e = new Date(w.start); e.setDate(e.getDate()+7);
+    let a = data.findIndex(c=>c.datetime.getTime()>=s), b = data.findIndex(c=>c.datetime.getTime()>=e.getTime());
+    if(a<0) a = data.length; if(b<0) b = data.length;
+    const pad = Math.max(6, Math.round((b-a)*.4));
+    view = {a:Math.max(0,a-pad), b:Math.min(data.length,b+pad), hl:[a,b]};
+  }
+  addChart(st, r.sid, data, trades, r.secid, tf, r.p, host, view);
+  if(wi != null){ const w = r.wk[wi]; host.querySelector('h2 .mono').textContent += ` · неделя с ${w.start.toLocaleDateString('ru-RU')}: ${fmt(w.pnl,0)} ₽`; }
   host.scrollIntoView({behavior:'smooth', block:'start'});
 }
 
@@ -680,17 +715,18 @@ let studySort = {k:null, dir:1};
 
 function renderStudy(rows, tf){
   const cls = v => v>0 ? 'pos' : (v<0 ? 'neg' : '');
-  const day = d => d.toISOString().slice(0,10);
+  const day = d => d.toLocaleDateString('sv-SE');
   const key = {c:r=>r.secid, s:r=>r.name, w:r=>r.wk.length, t:r=>r.total, p:r=>r.pos, x:r=>r.worst, d:r=>r.dd, n:r=>r.trades}[studySort.k];
   const order = rows.map((_,i)=>i).sort((a,b)=>{ const A=rows[a], B=rows[b]; if(A.err||B.err) return (A.err?1:0)-(B.err?1:0); if(!key) return 0; const x=key(A), y=key(B); return (typeof x==='string' ? x.localeCompare(y) : x-y) * studySort.dir; });
   const th = (k,l)=>`<th data-k="${k}">${l}${studySort.k===k ? (studySort.dir>0 ? ' ▲' : ' ▼') : ''}</th>`;
   const body = order.map(ri=>{ const r = rows[ri]; return r.err
     ? `<tr><td>${r.secid}</td><td>${r.name}</td><td colspan="8" class="neg">${esc(r.err)}</td></tr>`
-    : `<tr><td>${r.secid}</td><td>${r.name}</td><td>${r.wk.length}</td><td class="${cls(r.total)}">${fmt(r.total,0)}</td><td>${fmt(r.pos,0)}%</td><td class="neg">${fmt(r.worst,0)}</td><td>${fmt(r.dd,0)}</td><td>${r.trades}</td><td><div class="wk">${r.wk.map(w=>`<i title="${day(w.start)}: ${fmt(w.pnl,0)} ₽" style="background:var(--${w.pnl>0?'green':(w.pnl<0?'red':'line')})"></i>`).join('')}</div></td><td><button class="link" data-i="${ri}">График</button></td></tr>`; }).join('');
+    : `<tr><td>${r.secid}</td><td>${r.name}</td><td>${r.wk.length}</td><td class="${cls(r.total)}">${fmt(r.total,0)}</td><td>${fmt(r.pos,0)}%</td><td class="neg">${fmt(r.worst,0)}</td><td>${fmt(r.dd,0)}</td><td>${r.trades}</td><td><div class="wk">${r.wk.map((w,wi)=>`<i data-r="${ri}" data-w="${wi}" title="${day(w.start)}: ${fmt(w.pnl,0)} ₽" style="background:var(--${w.pnl>0?'green':(w.pnl<0?'red':'line')})"></i>`).join('')}</div></td><td><button class="link" data-i="${ri}">График</button></td></tr>`; }).join('');
   $('out').innerHTML = `<div class="panel"><h2>Разбор за год по неделям <button class="link" id="exp-wk">Экспорт недель CSV</button></h2>
     <div class="scroll"><table style="min-width:780px"><thead><tr>${th('c','Контракт')}${th('s','Стратегия')}${th('w','Нед.')}${th('t','Итог ₽')}${th('p','Прибыльных')}${th('x','Худшая')}${th('d','Просадка')}${th('n','Сделок')}<th>Недели</th><th></th></tr></thead><tbody>${body}</tbody></table></div>
-    <div class="hint">${tf}, 365 дней, ₽ на выбранное число контрактов. Неделя — изменение капитала с учётом открытой позиции, сумма недель равна итогу. Зелёный квадрат — прибыльная неделя, красный — убыточная. Фандинг не учитывается. Итоги по истории показывают устойчивость, а не прогноз.</div></div><div id="study-chart"></div>`;
+    <div class="hint">${tf}, 365 дней, ₽ на выбранное число контрактов. Неделя — изменение капитала с учётом открытой позиции, сумма недель равна итогу. Зелёный квадрат — прибыльная неделя, красный — убыточная; нажмите на квадрат, чтобы увидеть график этой недели. Фандинг не учитывается. Итоги по истории показывают устойчивость, а не прогноз.</div></div><div id="study-chart"></div>`;
   $('out').querySelectorAll('th[data-k]').forEach(h=>{ h.onclick = ()=>{ const k = h.dataset.k; studySort = studySort.k===k ? {k, dir:-studySort.dir} : {k, dir:(k==='c'||k==='s') ? 1 : -1}; renderStudy(rows, tf); }; });
+  $('out').querySelectorAll('.wk i[data-w]').forEach(el=>{ el.onclick = ()=>openRowChart(rows[+el.dataset.r], tf, +el.dataset.w); });
   $('out').querySelectorAll('button[data-i]').forEach(b=>{ b.onclick = ()=>openRowChart(rows[+b.dataset.i], tf); });
   $('exp-wk').onclick = ()=>{
     const a = document.createElement('a');
